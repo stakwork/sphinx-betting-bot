@@ -1,0 +1,31 @@
+{
+  "name": "bet-bot",
+  "description": "Sphinx Betting Bot",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "build-web": "tsc && webpack",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "sphinx",
+    "bitcoin",
+    "lightning"
+  ],
+  "author": "Evan Feenstra",
+  "license": "ISC",
+  "devDependencies": {
+    "terser-webpack-plugin": "^4.0.0",
+    "typescript": "^3.9.7",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "node-fetch": "^2.6.1",
+    "redis": "^3.1.2",
+    "sphinx-bot": "^0.2.28"
+  }
+}
