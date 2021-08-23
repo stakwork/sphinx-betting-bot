@@ -5,7 +5,7 @@ import newBot from "./new";
 
 redis.initialize();
 
-const PREFIX = "example";
+const PREFIX = "bet";
 
 let initted = false;
 
@@ -16,7 +16,7 @@ function init() {
   const client = new Sphinx.Client();
   client.login(process.env.SPHINX_TOKEN || "");
 
-  client.on(Sphinx.MSG_TYPE.INSTALL, async (message) => {
+  client.on(Sphinx.MSG_TYPE.INSTALL, async (message: Sphinx.Msg) => {
     console.log("=> Received an install!");
     const embed = new Sphinx.MessageEmbed()
       .setAuthor("BettingBot")
@@ -25,7 +25,7 @@ function init() {
   });
 
   client.on(Sphinx.MSG_TYPE.MESSAGE, async (message: Sphinx.Msg) => {
-    console.log("=> Received a message!");
+    console.log("=> Received a message!", JSON.stringify(message, null, 2));
     const arr = message.content.trim().split(" ");
     if (arr.length < 2) return;
     if (arr[0] !== "/" + PREFIX) return;

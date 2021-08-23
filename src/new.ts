@@ -1,30 +1,27 @@
 import errorEmbed from "./error";
 import * as redis from "./redis";
 import * as Sphinx from "sphinx-bot";
+import { makeName } from "./names";
 
 // const types = ["price"];
 
 export default async function newBot(message: Sphinx.Msg) {
-  console.log(JSON.stringify(message, null, 2));
+  // console.log(JSON.stringify(message, null, 2));
   const arr = message.content.trim().split(" ");
-
-  const tribe = message.channel.id;
-  const pubkey = message.member.id;
-  const nickname = message.member.nickname;
 
   if (arr.length !== 2) {
     return errorEmbed(message, "Wrong number of arguments");
   }
 
-  const name = nickname || "anon";
-  const NAME = "_" + tribe + "_" + pubkey;
+  const K = makeName("new", message);
 
-  const existingNew = await redis.get(NAME);
+  const existingNew = await redis.get(K);
   if (existingNew) {
     return errorEmbed(message, "You've already started a bot...");
   }
 
-  await redis.set(NAME, {
+  const name = message.member.nickname || "anon";
+  await redis.set(K, {
     name,
     ts: ts(),
   });
