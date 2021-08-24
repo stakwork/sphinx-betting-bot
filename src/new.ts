@@ -1,9 +1,13 @@
 import errorEmbed from "./error";
 import * as redis from "./redis";
 import * as Sphinx from "sphinx-bot";
-import { makeName } from "./names";
 
-// const types = ["price"];
+const types = ["price"];
+
+enum Steps {
+  ONE = 1,
+  TWO = 2,
+}
 
 export default async function newBot(message: Sphinx.Msg) {
   // console.log(JSON.stringify(message, null, 2));
@@ -13,20 +17,104 @@ export default async function newBot(message: Sphinx.Msg) {
     return errorEmbed(message, "Wrong number of arguments");
   }
 
-  const K = makeName("new", message);
-
-  const existingNew = await redis.get(K);
-  if (existingNew) {
-    return errorEmbed(message, "You've already started a bot...");
-  }
+  // const existingNew = await redis.get(K);
+  // if (existingNew) {
+  //   return errorEmbed(message, "You've already started a bot...");
+  // }
 
   const name = message.member.nickname || "anon";
-  await redis.set(K, {
+
+  const uuid = message.reply("What type of bet? [price]");
+
+  await redis.set(uuid, {
+    step: Steps.ONE,
+    member_id: message.member.id,
     name,
     ts: ts(),
   });
-  message.reply("What type of bet? [price]");
 }
+
+async function stepTwo(message: Sphinx.Msg) {
+  const kind = message.content.trim();
+  if (!types.includes(kind)) {
+    return errorEmbed(message, "Not a valid bet type");
+  }
+
+  const newuuid = message.reply("How many hours do you want the bet to last?");
+
+  await redis.set(newuuid, {
+    step: Steps.TWO,
+    member_id: message.member.id,
+    type: kind,
+    ts: ts(),
+  });
+}
+
+async function stepThree(message: Sphinx.Msg, existing: any) {
+  const nums = message.content.trim();
+  const num = parseInt(nums);
+  if (!num || (num && num > 100)) {
+    return errorEmbed(message, "Invalid number");
+  }
+
+  if (!existing.type) {
+    return errorEmbed(message, "Invalid bet type");
+  }
+
+  const name = message.member.nickname || "anon";
+
+  const K = "BET_" + name;
+
+  const already = await redis.get(K);
+  if (already) {
+    return errorEmbed(message, "You already have a running bet");
+  }
+
+  await redis.set(K, {
+    type: existing.type,
+    hours: num,
+    ts: ts(),
+  });
+
+  const embed = new Sphinx.MessageEmbed()
+    .setAuthor("BettingBot")
+    .setDescription("Bet Created!")
+    .addFields([
+      { name: "name:", value: name, inline: true },
+      { name: "type:", value: existing.type, inline: true },
+      { name: "hours:", value: num, inline: true },
+    ]);
+  message.channel.send({ embed });
+}
+
+export async function thread(message: Sphinx.Msg) {
+  const uuid = message.reply_id;
+  if (!uuid) {
+    return errorEmbed(message, "Couldn't find a bot");
+  }
+  const existing = await redis.get(uuid);
+  if (!existing) {
+    return errorEmbed(message, "Couldn't find a bot");
+  }
+  if (existing.member_id !== message.member.id) {
+    return errorEmbed(message, "Not your bot");
+  }
+
+  if (existing.step === Steps.ONE) {
+    return stepTwo(message);
+  }
+  if (existing.step === Steps.TWO) {
+    return stepThree(message, existing);
+  }
+}
+
+/*
+
+alice: 123
+bot: 456 reply_uuid: 123
+alice: reply_uuid: 456
+
+*/
 
 // function more(message) {
 //   const arr = message.content.trim().split(" ");

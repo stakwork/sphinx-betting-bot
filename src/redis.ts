@@ -12,7 +12,7 @@ export async function initialize() {
   }
 }
 
-export async function get(key: string) {
+export async function get(key: string): Promise<any> {
   return new Promise((resolve) => {
     client.get(key, function (err, res) {
       if (err) {
@@ -29,9 +29,10 @@ export async function get(key: string) {
   });
 }
 
-export async function set(key: string, value: Object) {
+export async function set(key: string, value: Object, ttl?: number) {
+  const t = ttl || 3600; // one hour
   return new Promise((resolve) => {
-    client.set(key, JSON.stringify(value), function (err, res) {
+    client.set(key, JSON.stringify(value), "EX", t, function (err, res) {
       if (err) {
         resolve(null);
       } else {

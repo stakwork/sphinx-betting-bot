@@ -1,7 +1,7 @@
 require("dotenv").config();
 import * as Sphinx from "sphinx-bot";
 import * as redis from "./redis";
-import newBot from "./new";
+import newBot, { thread } from "./new";
 
 redis.initialize();
 
@@ -14,7 +14,7 @@ function init() {
   initted = true;
 
   const client = new Sphinx.Client();
-  client.login(process.env.SPHINX_TOKEN || "");
+  client.login(process.env.SPHINX_TOKEN || "", undefined, true);
 
   client.on(Sphinx.MSG_TYPE.INSTALL, async (message: Sphinx.Msg) => {
     console.log("=> Received an install!");
@@ -27,6 +27,9 @@ function init() {
   client.on(Sphinx.MSG_TYPE.MESSAGE, async (message: Sphinx.Msg) => {
     console.log("=> Received a message!", JSON.stringify(message, null, 2));
     const arr = message.content.trim().split(" ");
+    if (arr.length === 1) {
+      return thread(message);
+    }
     if (arr.length < 2) return;
     if (arr[0] !== "/" + PREFIX) return;
     const cmd = arr[1];
