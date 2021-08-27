@@ -30,7 +30,7 @@ export async function get(key: string): Promise<any> {
 }
 
 export async function set(key: string, value: Object, ttl?: number) {
-  const t = ttl || 3600; // one hour
+  const t = ttl || 2592000; // 30 days
   return new Promise((resolve) => {
     client.set(key, JSON.stringify(value), "EX", t, function (err, res) {
       if (err) {

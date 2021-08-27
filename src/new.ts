@@ -1,8 +1,10 @@
 import errorEmbed from "./error";
 import * as redis from "./redis";
 import * as Sphinx from "sphinx-bot";
-
-const types = ["price"];
+import * as btc from "./btc";
+import { Bet, Type } from "./types";
+import * as timeouts from "./timeouts";
+import { makeName } from "./bets";
 
 enum Steps {
   ONE = 1,
@@ -36,7 +38,7 @@ export default async function newBot(message: Sphinx.Msg) {
 
 async function stepTwo(message: Sphinx.Msg) {
   const kind = message.content.trim();
-  if (!types.includes(kind)) {
+  if (!(<any>Object).values(Type).includes(kind)) {
     return errorEmbed(message, "Not a valid bet type");
   }
 
@@ -61,28 +63,45 @@ async function stepThree(message: Sphinx.Msg, existing: any) {
     return errorEmbed(message, "Invalid bet type");
   }
 
-  const name = message.member.nickname || "anon";
-
-  const K = "BET_" + name;
+  const K = makeName(message);
 
   const already = await redis.get(K);
   if (already) {
     return errorEmbed(message, "You already have a running bet");
   }
 
-  await redis.set(K, {
+  const price = await btc.price();
+
+  const b: Bet = {
+    channel: message.channel.id,
     type: existing.type,
     hours: num,
     ts: ts(),
-  });
+    price,
+    placements: [],
+  };
+  await redis.set(K, b);
+  timeouts.set(K, num);
+
+  const name = message.member.nickname || "anon";
 
   const embed = new Sphinx.MessageEmbed()
     .setAuthor("BettingBot")
-    .setDescription("Bet Created!")
+    .setTitle("Bet Created!")
+    .setDescription(
+      `BTC price is currently $${price}. Bet ends in ${num} hours.`
+    )
     .addFields([
-      { name: "name:", value: name, inline: true },
-      { name: "type:", value: existing.type, inline: true },
-      { name: "hours:", value: num, inline: true },
+      {
+        name: "Bet price will go up:",
+        value: `/bet ${name} up 1000`,
+        inline: true,
+      },
+      {
+        name: "Bet price will go down:",
+        value: `/bet ${name} down 1000`,
+        inline: true,
+      },
     ]);
   message.channel.send({ embed });
 }
