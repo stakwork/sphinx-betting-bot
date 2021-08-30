@@ -28,22 +28,32 @@ export default async function placeBet(message: Sphinx.Msg) {
     return errorEmbed(message, "bet not found");
   }
 
-  const direction = arr[2];
-  if (!(direction === "up" || direction == "down")) {
-    return errorEmbed(message, "what?");
+  const id = message.member.id || "0";
+  const existingPlacement = b.placements.find((p) => p.id === id);
+  if (existingPlacement) {
+    return errorEmbed(message, `You already place a bet with ${b.name}`);
   }
 
-  const amt = arr[3];
-  const amount = parseInt(amt);
-  if (!amount) return errorEmbed(message, "wrong amount of sats");
+  const sats_string = arr[2];
+  const sats = parseInt(sats_string);
+  if (!sats) {
+    return errorEmbed(message, "no sats?");
+  }
 
-  const id = message.member.id || "0";
+  let price_string = arr[3];
+  if (price_string.startsWith("$")) {
+    price_string = price_string.substring(1);
+  }
+  const price = parseFloat(price_string);
+  if (!price) return errorEmbed(message, "invalid price");
+
   const name = message.member.nickname || "anon";
   const place: Placement = {
-    amount,
+    amount: sats,
     name: name,
     id: id,
-    param: direction,
+    msg_id: message.id,
+    param: price + "",
     type: Type.PRICE,
   };
 
@@ -51,5 +61,5 @@ export default async function placeBet(message: Sphinx.Msg) {
   b.placements.push(place);
   await redis.set(K, b);
 
-  message.reply(`${name} placed a bet for ${amount} sats!`);
+  message.reply(`${name} placed a bet for ${sats} sats!`);
 }

@@ -72,6 +72,8 @@ async function stepThree(message: Sphinx.Msg, existing: any) {
 
   const price = await btc.price();
 
+  const name = message.member.nickname || "anon";
+
   const b: Bet = {
     channel: message.channel.id,
     type: existing.type,
@@ -79,27 +81,26 @@ async function stepThree(message: Sphinx.Msg, existing: any) {
     ts: ts(),
     price,
     placements: [],
+    name,
   };
   await redis.set(K, b);
   timeouts.set(K, num);
-
-  const name = message.member.nickname || "anon";
 
   const embed = new Sphinx.MessageEmbed()
     .setAuthor("BettingBot")
     .setTitle("Bet Created!")
     .setDescription(
-      `BTC price is currently $${price}. Bet ends in ${num} hours.`
+      `BTC price is currently $${price}. What will the price be in ${num} hours?`
     )
     .addFields([
       {
-        name: "Bet price will go up:",
-        value: `/bet ${name} up 1000`,
+        name: "Bet on the price:",
+        value: `/bet ${name} SATS PRICE`,
         inline: true,
       },
       {
-        name: "Bet price will go down:",
-        value: `/bet ${name} down 1000`,
+        name: "Example:",
+        value: `/bet ${name} 1337 $50000`,
         inline: true,
       },
     ]);
@@ -126,55 +127,6 @@ export async function thread(message: Sphinx.Msg) {
     return stepThree(message, existing);
   }
 }
-
-/*
-
-alice: 123
-bot: 456 reply_uuid: 123
-alice: reply_uuid: 456
-
-*/
-
-// function more(message) {
-//   const arr = message.content.trim().split(" ");
-//   const type = arr[2];
-//   if (!types.includes(type)) {
-//     return errorEmbed(message, "Invalid type");
-//   }
-//   const hours_s = arr[3];
-//   const hours = parseInt(hours_s);
-//   if (!hours || hours < 1 || hours > 100) {
-//     return errorEmbed(message, "Invalid timeout");
-//   }
-
-//   const name = nickname || "anon";
-
-//   const NAME = tribe + "_" + name;
-//   const existing = await redis.get(NAME);
-//   if (existing) {
-//     return errorEmbed(message, 'Bet already exists with name "' + name + '"');
-//   }
-//   const bet = {
-//     name,
-//     type,
-//     tribe,
-//     pubkey,
-//     timestamp: ts(),
-//     end: ts() + hours * 60 * 60,
-//   };
-//   await redis.set(NAME, bet);
-
-//   const embed = new Sphinx.MessageEmbed()
-//     .setAuthor("BettingBot")
-//     .setTitle("Created a new bet:")
-//     .addFields([
-//       { name: "Type:", value: type, inline: true },
-//       { name: "Name", value: name, inline: true },
-//       { name: "Timeout", value: hours + " hours", inline: true },
-//     ]);
-//   message.channel.send({ embed });
-//   return;
-// }
 
 function ts() {
   return Math.floor(new Date().getTime() / 1000);

@@ -19,6 +19,5 @@ export async function price() {
   if (!r.ok) return;
   const j = await r.json();
   const price = j.data.BTC.quote.USD.price; //.toFixed(2);
-  console.log(price, typeof price);
   return price.toFixed(2);
 }

@@ -10,12 +10,14 @@ export interface Bet {
   ts: number;
   price: string;
   placements: Placement[];
+  name: string;
 }
 
 export interface Placement {
   type: Type;
-  id: string;
-  name: string;
+  msg_id: string;
+  id: string; // user id
+  name: string; // user name
   amount: number;
   param: string;
 }
