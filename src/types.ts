@@ -6,6 +6,7 @@ export enum Type {
 export interface Bet {
   channel: string;
   type: Type;
+  sats: number;
   hours: number;
   ts: number;
   price: string;

@@ -11,35 +11,43 @@ enum Steps {
   TWO = 2,
 }
 
-export default async function newBot(message: Sphinx.Msg) {
+export default async function newBet(message: Sphinx.Msg) {
   // console.log(JSON.stringify(message, null, 2));
   const arr = message.content.trim().split(" ");
 
-  if (arr.length !== 2) {
+  if (arr.length !== 3) {
     return errorEmbed(message, "Wrong number of arguments");
   }
 
-  // const existingNew = await redis.get(K);
-  // if (existingNew) {
-  //   return errorEmbed(message, "You've already started a bot...");
-  // }
+  const kind = arr[2];
+
+  if (!(<any>Object).values(Type).includes(kind)) {
+    return errorEmbed(message, "Not a valid bet type");
+  }
 
   const name = message.member.nickname || "anon";
 
-  const uuid = message.reply("What type of bet? [price]");
+  const uuid = message.reply("How much is the bet price?");
 
+  console.log("======> SET WITH UUID", uuid);
   await redis.set(uuid, {
     step: Steps.ONE,
     member_id: message.member.id,
+    type: kind,
     name,
     ts: ts(),
   });
 }
 
-async function stepTwo(message: Sphinx.Msg) {
-  const kind = message.content.trim();
-  if (!(<any>Object).values(Type).includes(kind)) {
-    return errorEmbed(message, "Not a valid bet type");
+async function stepTwo(message: Sphinx.Msg, existing: Bet) {
+  const num = message.content.trim();
+  const sats = parseInt(num);
+  if (!sats) {
+    return errorEmbed(message, "Invalid number");
+  }
+
+  if (!existing.type) {
+    return errorEmbed(message, "Invalid bet type");
   }
 
   const newuuid = message.reply("How many hours do you want the bet to last?");
@@ -47,12 +55,13 @@ async function stepTwo(message: Sphinx.Msg) {
   await redis.set(newuuid, {
     step: Steps.TWO,
     member_id: message.member.id,
-    type: kind,
+    type: existing.type,
+    sats: sats,
     ts: ts(),
   });
 }
 
-async function stepThree(message: Sphinx.Msg, existing: any) {
+async function stepThree(message: Sphinx.Msg, existing: Bet) {
   const nums = message.content.trim();
   const num = parseInt(nums);
   if (!num || (num && num > 100)) {
@@ -77,6 +86,7 @@ async function stepThree(message: Sphinx.Msg, existing: any) {
   const b: Bet = {
     channel: message.channel.id,
     type: existing.type,
+    sats: existing.sats,
     hours: num,
     ts: ts(),
     price,
@@ -95,12 +105,12 @@ async function stepThree(message: Sphinx.Msg, existing: any) {
     .addFields([
       {
         name: "Bet on the price:",
-        value: `/bet ${name} SATS PRICE`,
+        value: `/bet ${name} ${existing.sats} PRICE`,
         inline: true,
       },
       {
         name: "Example:",
-        value: `/bet ${name} 1337 $50000`,
+        value: `/bet ${name} ${existing.sats} $50000`,
         inline: true,
       },
     ]);
@@ -110,18 +120,19 @@ async function stepThree(message: Sphinx.Msg, existing: any) {
 export async function thread(message: Sphinx.Msg) {
   const uuid = message.reply_id;
   if (!uuid) {
-    return errorEmbed(message, "Couldn't find a bot");
+    return errorEmbed(message, "Couldn't find a bet...");
   }
+  console.log("===>TRY TO GET BY REPLY UUID", uuid);
   const existing = await redis.get(uuid);
   if (!existing) {
-    return errorEmbed(message, "Couldn't find a bot");
+    return errorEmbed(message, "Couldn't find a bet");
   }
   if (existing.member_id !== message.member.id) {
     return errorEmbed(message, "Not your bot");
   }
 
   if (existing.step === Steps.ONE) {
-    return stepTwo(message);
+    return stepTwo(message, existing);
   }
   if (existing.step === Steps.TWO) {
     return stepThree(message, existing);

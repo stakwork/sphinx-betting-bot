@@ -1,5 +1,5 @@
 import * as Sphinx from "sphinx-bot";
-import newBot, { thread } from "./new";
+import newBet, { thread } from "./new";
 import placeBet from "./bets";
 
 export let client: Sphinx.Client;
@@ -38,7 +38,7 @@ export function init() {
 
     switch (cmd) {
       case "new":
-        return newBot(message);
+        return newBet(message);
 
       case "help":
         const embed2 = new Sphinx.MessageEmbed()

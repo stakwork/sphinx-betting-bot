@@ -3,8 +3,6 @@ import errorEmbed from "./error";
 import * as redis from "./redis";
 import { Bet, Placement, Type } from "./types";
 
-// BET = the created bet
-// PLACEMENT = a placed bet
 export function makeNameCustom(thing: string) {
   return "B_" + thing;
 }
@@ -20,8 +18,7 @@ export default async function placeBet(message: Sphinx.Msg) {
     return errorEmbed(message, "wrong number of arguments");
   }
 
-  const n = arr[1];
-  const K = makeNameCustom(n);
+  const K = makeNameCustom(arr[1]);
 
   const b: Bet = await redis.get(K);
   if (!b) {
@@ -29,6 +26,7 @@ export default async function placeBet(message: Sphinx.Msg) {
   }
 
   const id = message.member.id || "0";
+  console.log(`USER ID ${id} placed a bet!`);
   const existingPlacement = b.placements.find((p) => p.id === id);
   if (existingPlacement) {
     return errorEmbed(message, `You already place a bet with ${b.name}`);
@@ -38,6 +36,10 @@ export default async function placeBet(message: Sphinx.Msg) {
   const sats = parseInt(sats_string);
   if (!sats) {
     return errorEmbed(message, "no sats?");
+  }
+
+  if (b.sats !== sats) {
+    return errorEmbed(message, "wrong bet price");
   }
 
   let price_string = arr[3];
@@ -61,5 +63,5 @@ export default async function placeBet(message: Sphinx.Msg) {
   b.placements.push(place);
   await redis.set(K, b);
 
-  message.reply(`${name} placed a bet for ${sats} sats!`);
+  message.reply(`${name} bets $${price + ""}`);
 }
