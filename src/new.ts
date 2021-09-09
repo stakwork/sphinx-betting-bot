@@ -122,7 +122,7 @@ export async function thread(message: Sphinx.Msg) {
   if (!uuid) {
     return errorEmbed(message, "Couldn't find a bet...");
   }
-  console.log("===>TRY TO GET BY REPLY UUID", uuid);
+  // console.log("===>TRY TO GET BY REPLY UUID", uuid);
   const existing = await redis.get(uuid);
   if (!existing) {
     return errorEmbed(message, "Couldn't find a bet");

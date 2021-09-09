@@ -6,7 +6,7 @@ import * as Sphinx from "sphinx-bot";
 
 const timeouts = {};
 
-const mult = 5000; //60 * 60 * 1000
+const mult = 60 * 60 * 1000; // 5000
 
 export function set(K: string, hours: number) {
   timeouts[K] = setTimeout(() => {
